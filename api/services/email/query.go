@@ -32,7 +32,10 @@ const (
 			?, status
 		),
 		last_event_at = GREATEST(IFNULL(last_event_at, '1970-01-01'), ?),
-		last_error = IF(?, ?, last_error)
+		last_error = CASE
+			WHEN ? IS NOT NULL AND ? != '' THEN ?
+			ELSE last_error
+		END
 		WHERE resend_id = ?
 	`
 
