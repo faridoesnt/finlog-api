@@ -18,44 +18,44 @@ jobs:
       - name: Generate runtime env file
         run: |
           cat <<EOF > .env.runtime
-          SERVER_ENV=${{ vars.SERVER_ENV }}
-          SERVER_PORT=${{ vars.SERVER_PORT }}
+          SERVER_ENV="${{ vars.SERVER_ENV }}"
+          SERVER_PORT="${{ vars.SERVER_PORT }}"
 
-          DB_DIALEG=${{ vars.DB_DIALEG }}
-          DB_HOSTWRITER=${{ vars.DB_HOSTWRITER }}
-          DB_HOSTREADER=${{ vars.DB_HOSTREADER }}
-          DB_PORT=${{ vars.DB_PORT }}
-          DB_NAME=${{ secrets.DB_NAME }}
-          USERNAME=${{ secrets.USERNAME }}
-          PASSWORD=${{ secrets.PASSWORD }}
+          DB_DIALEG="${{ vars.DB_DIALEG }}"
+          DB_HOSTWRITER="${{ vars.DB_HOSTWRITER }}"
+          DB_HOSTREADER="${{ vars.DB_HOSTREADER }}"
+          DB_PORT="${{ vars.DB_PORT }}"
+          DB_NAME="${{ secrets.DB_NAME }}"
+          USERNAME="${{ secrets.USERNAME }}"
+          PASSWORD="${{ secrets.PASSWORD }}"
 
-          JWT_SECRET=${{ secrets.JWT_SECRET }}
-          REFRESH_SECRET=${{ secrets.REFRESH_SECRET }}
-          JWT_TTL=${{ vars.JWT_TTL }}
-          REFRESH_TTL=${{ vars.REFRESH_TTL }}
+          JWT_SECRET="${{ secrets.JWT_SECRET }}"
+          REFRESH_SECRET="${{ secrets.REFRESH_SECRET }}"
+          JWT_TTL="${{ vars.JWT_TTL }}"
+          REFRESH_TTL="${{ vars.REFRESH_TTL }}"
 
-          RATE_LIMIT_REQUESTS=${{ vars.RATE_LIMIT_REQUESTS }}
-          RATE_LIMIT_WINDOW=${{ vars.RATE_LIMIT_WINDOW }}
-          IMPORT_RATE_LIMIT_BATCHES=${{ vars.IMPORT_RATE_LIMIT_BATCHES }}
-          IMPORT_RATE_LIMIT_WINDOW=${{ vars.IMPORT_RATE_LIMIT_WINDOW }}
-          IMPORT_UNDO_RATE_LIMIT_REQUESTS=${{ vars.IMPORT_UNDO_RATE_LIMIT_REQUESTS }}
-          IMPORT_UNDO_RATE_LIMIT_WINDOW=${{ vars.IMPORT_UNDO_RATE_LIMIT_WINDOW }}
+          RATE_LIMIT_REQUESTS="${{ vars.RATE_LIMIT_REQUESTS }}"
+          RATE_LIMIT_WINDOW="${{ vars.RATE_LIMIT_WINDOW }}"
+          IMPORT_RATE_LIMIT_BATCHES="${{ vars.IMPORT_RATE_LIMIT_BATCHES }}"
+          IMPORT_RATE_LIMIT_WINDOW="${{ vars.IMPORT_RATE_LIMIT_WINDOW }}"
+          IMPORT_UNDO_RATE_LIMIT_REQUESTS="${{ vars.IMPORT_UNDO_RATE_LIMIT_REQUESTS }}"
+          IMPORT_UNDO_RATE_LIMIT_WINDOW="${{ vars.IMPORT_UNDO_RATE_LIMIT_WINDOW }}"
 
-          API_BASE_URL=${{ vars.API_BASE_URL }}
+          API_BASE_URL="${{ vars.API_BASE_URL }}"
 
-          RESEND_API_KEY=${{ secrets.RESEND_API_KEY }}
-          EMAIL_FROM=${{ vars.EMAIL_FROM }}
+          RESEND_API_KEY="${{ secrets.RESEND_API_KEY }}"
+          EMAIL_FROM="${{ vars.EMAIL_FROM }}"
 
-          MYSQL_ROOT_PASSWORD=${{ secrets.MYSQL_ROOT_PASSWORD }}
-          MYSQL_DATABASE=${{ secrets.MYSQL_DATABASE }}
-          MYSQL_USER=${{ secrets.MYSQL_USER }}
-          MYSQL_PASSWORD=${{ secrets.MYSQL_PASSWORD }}
+          MYSQL_ROOT_PASSWORD="${{ secrets.MYSQL_ROOT_PASSWORD }}"
+          MYSQL_DATABASE="${{ secrets.MYSQL_DATABASE }}"
+          MYSQL_USER="${{ secrets.MYSQL_USER }}"
+          MYSQL_PASSWORD="${{ secrets.MYSQL_PASSWORD }}"
 
-          API_DOMAIN=${{ vars.API_DOMAIN }}
-          WEB_DOMAIN=${{ vars.WEB_DOMAIN }}
+          API_DOMAIN="${{ vars.API_DOMAIN }}"
+          WEB_DOMAIN="${{ vars.WEB_DOMAIN }}"
 
-          NETDATA_MYSQL_USER=${{ secrets.NETDATA_MYSQL_USER }}
-          NETDATA_MYSQL_PASSWORD=${{ secrets.NETDATA_MYSQL_PASSWORD }}
+          NETDATA_MYSQL_USER="${{ secrets.NETDATA_MYSQL_USER }}"
+          NETDATA_MYSQL_PASSWORD="${{ secrets.NETDATA_MYSQL_PASSWORD }}"
           EOF
 
       - name: Upload Code to VPS
