@@ -1,0 +1,188 @@
+name: Deploy Finlog API
+
+on:
+  pull_request:
+    branches: ["master"]
+    types: [closed]
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    if: github.event.pull_request.merged == true || github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Upload Code to VPS
+        uses: appleboy/scp-action@v0.1.7
+        with:
+          host: ${{ secrets.SSH_HOST }}
+          username: ${{ secrets.SSH_USER }}
+          key: ${{ secrets.SSH_KEY }}
+          port: ${{ secrets.SSH_PORT }}
+          source: "."
+          target: "/home/farid/apps/finlog-api"
+          rm: false
+          overwrite: true
+
+      - name: Blue-Green Deploy
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.SSH_HOST }}
+          username: ${{ secrets.SSH_USER }}
+          key: ${{ secrets.SSH_KEY }}
+          port: ${{ secrets.SSH_PORT }}
+          script: |
+            set -e
+            cd /home/farid/apps/finlog-api
+
+            NETWORK="finlog-api_finlog-net"
+
+            echo "🔍 Checking Blue/Green existence..."
+            BLUE_EXISTS=$(docker ps -a --format '{{.Names}}' | grep -w finlog-api-blue || true)
+            GREEN_EXISTS=$(docker ps -a --format '{{.Names}}' | grep -w finlog-api-green || true)
+
+            # =====================================
+            # AUTO BOOTSTRAP (FIRST TIME ONLY)
+            # =====================================
+            if [ -z "$BLUE_EXISTS" ] && [ -z "$GREEN_EXISTS" ]; then
+              echo "🟡 No blue/green found — BOOTSTRAPPING..."
+
+              docker compose down || true
+
+              echo "🟡 Building FIRST version as BLUE..."
+              docker build -t finlog-api:blue .
+
+              echo "🟡 Starting base infra (db, netdata, caddy)..."
+              docker compose up -d db netdata caddy || true
+
+              echo "🔵 Starting BLUE container..."
+              docker compose up -d api-blue
+
+              echo "⏳ Waiting for BLUE health..."
+              for i in {1..15}; do
+                STATUS=$(docker inspect --format='{{json .State.Health.Status}}' finlog-api-blue | tr -d '"')
+                echo "BLUE health: $STATUS"
+                [ "$STATUS" = "healthy" ] && break
+                sleep 2
+              done
+
+              if [ "$STATUS" != "healthy" ]; then
+                echo "❌ BOOTSTRAP FAILED — BLUE unhealthy"
+                docker logs finlog-api-blue --tail 200
+                exit 1
+              fi
+
+              echo "🔗 Adding LIVE alias to BLUE..."
+              docker network disconnect $NETWORK finlog-api-blue 2>/dev/null || true
+              docker network connect --alias finlog-api-live $NETWORK finlog-api-blue
+
+              echo "🎉 BOOTSTRAP COMPLETE — system ready!"
+              exit 0
+            fi
+
+            # ======================================================
+            # NORMAL BLUE-GREEN DEPLOY (AFTER BOOTSTRAP)
+            # ======================================================
+            echo "🔵 Detecting active color..."
+            ACTIVE="none"
+
+            if docker network inspect $NETWORK | grep -qw finlog-api-blue; then
+              ACTIVE="blue"
+            elif docker network inspect $NETWORK | grep -qw finlog-api-green; then
+              ACTIVE="green"
+            fi
+
+            echo "Active color = $ACTIVE"
+
+            if [ "$ACTIVE" = "blue" ]; then
+              NEXT="green"
+            else
+              NEXT="blue"
+            fi
+
+            echo "Next deploy target = $NEXT"
+
+            echo "🔵 Building NEXT image: finlog-api:$NEXT ..."
+            docker build -t finlog-api:$NEXT .
+
+            echo "🔵 Starting NEXT container..."
+            docker compose up -d api-$NEXT
+
+            echo "⏳ Waiting for NEXT health..."
+            for i in {1..15}; do
+              STATUS=$(docker inspect --format='{{json .State.Health.Status}}' finlog-api-$NEXT | tr -d '"')
+              echo "$NEXT health: $STATUS"
+              [ "$STATUS" = "healthy" ] && break
+              sleep 2
+            done
+
+            if [ "$STATUS" != "healthy" ]; then
+              echo "❌ NEXT unhealthy — rollback"
+              docker rm -f finlog-api-$NEXT
+              exit 1
+            fi
+
+            echo "🔄 Switching LIVE alias to $NEXT..."
+            # FIX: disconnect alias only if exists
+            docker network disconnect $NETWORK finlog-api-live 2>/dev/null || true
+
+            # FIX: ensure target container is not already attached with a conflicting endpoint
+            docker network disconnect $NETWORK finlog-api-$NEXT 2>/dev/null || true
+
+            # NOW attach as alias cleanly
+            docker network connect --alias finlog-api-live $NETWORK finlog-api-$NEXT
+
+            echo "💀 Stopping old $ACTIVE..."
+            docker rm -f finlog-api-$ACTIVE || true
+
+            echo "🚀 Deployment complete — LIVE = $NEXT"
+
+      - name: Recreate Netdata (force entrypoint)
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.SSH_HOST }}
+          username: ${{ secrets.SSH_USER }}
+          key: ${{ secrets.SSH_KEY }}
+          port: ${{ secrets.SSH_PORT }}
+          script: |
+            set -e
+            cd /home/farid/apps/finlog-api
+            
+            echo "🔄 Rebuilding Netdata dengan konfigurasi baru..."
+            docker compose build netdata --no-cache
+            
+            echo "🔄 Recreating Netdata..."
+            docker compose up -d netdata --force-recreate
+            
+            echo "⏳ Waiting 20s for Netdata to fully start..."
+            sleep 20
+            
+            echo "🔍 Checking Netdata status..."
+            docker exec finlog-netdata netdatacli ping && echo "✅ Netdata running"
+            
+            echo "🔍 Checking enabled plugins..."
+            docker exec finlog-netdata netdatacli list-collectors | grep -E "(cgroups|mysql|docker)" || true
+            
+            echo "🔍 Checking mysql.conf..."
+            if docker exec finlog-netdata test -f /etc/netdata/go.d/mysql.conf; then
+                echo "✅ mysql.conf found"
+                echo "📄 mysql.conf content (masked):"
+                docker exec finlog-netdata cat /etc/netdata/go.d/mysql.conf \
+                  | sed -E 's/(password:).*/\1 ****/' \
+                  | sed -E 's/(dsn:.*):(.*)@/\1:****@/'
+            else
+                echo "❌ mysql.conf missing!"
+                docker exec finlog-netdata ls -la /etc/netdata/go.d/
+            fi
+            
+            echo "🔍 Checking if cgroups plugin is active..."
+            curl -s http://localhost:19999/api/v1/charts | jq '.charts | keys[]' | grep cgroup && echo "✅ cgroups monitoring ACTIVE!" || echo "❌ cgroups not found"
+            
+            echo "🔍 Checking MySQL chart..."
+            curl -s http://localhost:19999/api/v1/charts | jq '.charts | keys[]' | grep mysql && echo "✅ MySQL monitoring ACTIVE!" || echo "❌ MySQL not found"
+            
+            echo "🔍 Checking Docker chart..."
+            curl -s http://localhost:19999/api/v1/charts | jq '.charts | keys[]' | grep docker && echo "✅ Docker monitoring ACTIVE!" || echo "❌ Docker not found"

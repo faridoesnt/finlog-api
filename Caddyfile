@@ -1,0 +1,33 @@
+{
+    email admin@finlog.asia
+    servers {
+        metrics
+    }
+}
+
+api.finlog.asia {
+    encode gzip
+    encode zstd
+
+    reverse_proxy finlog-api-live:8686 {
+		lb_policy first
+		lb_try_duration 2s
+		lb_try_interval 250ms
+	}
+
+    header {
+        Strict-Transport-Security "max-age=63072000; includeSubDomains; preload"
+        Referrer-Policy "strict-origin-when-cross-origin"
+        X-Content-Type-Options "nosniff"
+        X-Frame-Options "DENY"
+        X-XSS-Protection "1; mode=block"
+    }
+}
+
+www.api.finlog.asia {
+    redir https://api.finlog.asia{uri} permanent
+}
+
+finlog.asia {
+    respond "FinLog Landing Page - coming soon" 200
+}

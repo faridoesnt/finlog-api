@@ -1,0 +1,128 @@
+services:
+  db:
+    image: mysql:8.0
+    container_name: finlog-db
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
+      MYSQL_DATABASE: ${MYSQL_DB}
+      MYSQL_USER: ${MYSQL_USER}
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD}
+      TZ: Asia/Jakarta
+    command: --default-time-zone='Asia/Jakarta'
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    volumes:
+      - db_data:/var/lib/mysql
+      - /etc/localtime:/etc/localtime:ro
+      - /etc/timezone:/etc/timezone:ro
+    networks:
+      - finlog-net
+    ports:
+      - "127.0.0.1:3306:3306"
+    expose:
+      - "3306"
+
+  api-blue:
+    image: finlog-api:blue
+    container_name: finlog-api-blue
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fsS --max-time 1 http://localhost:8686/api/healthcheck || exit 1"]
+      interval: 5s
+      timeout: 2s
+      retries: 5
+    expose:
+      - "8686"
+    environment:
+      TZ: Asia/Jakarta
+    volumes:
+      - ./.env:/app/.env:ro
+    networks:
+      - finlog-net
+
+  api-green:
+    image: finlog-api:green
+    container_name: finlog-api-green
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fsS --max-time 1 http://localhost:8686/api/healthcheck || exit 1"]
+      interval: 5s
+      timeout: 2s
+      retries: 5
+    expose:
+      - "8686"
+    environment:
+      TZ: Asia/Jakarta
+    volumes:
+      - ./.env:/app/.env:ro
+    networks:
+      - finlog-net
+
+  caddy:
+    image: caddy:2.8
+    container_name: finlog-caddy
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    networks:
+      - finlog-net
+
+  netdata:
+    build:
+      context: ./netdata
+      dockerfile: Dockerfile
+    container_name: finlog-netdata
+    restart: unless-stopped
+    privileged: true
+    user: root
+    cap_add:
+      - SYS_ADMIN
+      - SYS_PTRACE
+      - SYS_CHROOT
+      - DAC_READ_SEARCH
+    security_opt:
+      - apparmor:unconfined
+      - seccomp:unconfined
+    environment:
+      - NETDATA_MYSQL_USER=${NETDATA_MYSQL_USER}
+      - NETDATA_MYSQL_PASSWORD=${NETDATA_MYSQL_PASSWORD}
+      - NETDATA_ENABLE_CGROUP_PLUGIN=yes
+      - NETDATA_ENABLE_GO_D=yes
+    volumes:
+      - netdata_data:/var/lib/netdata
+      - /proc:/host/proc:ro
+      - /sys:/host/sys:ro
+      - /sys/fs/cgroup:/host/sys/fs/cgroup:ro
+      - /etc/passwd:/host/etc/passwd:ro
+      - /etc/group:/host/etc/group:ro
+      - /etc/os-release:/host/etc/os-release:ro
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - ./netdata/override.conf:/etc/netdata/override.conf:ro
+    ports:
+      - "127.0.0.1:19999:19999"
+    networks:
+      - finlog-net
+
+networks:
+  finlog-net:
+
+volumes:
+  db_data:
+  caddy_data:
+  caddy_config:
+  netdata_data:
