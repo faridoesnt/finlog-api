@@ -51,7 +51,7 @@ func ResendWebhook(app *contracts.App) fiber.Handler {
 			return c.Status(http.StatusBadRequest).SendString("invalid json")
 		}
 
-		if body.Type == "" || body.Data.ID == "" {
+		if body.Type == "" || body.Data.EmailID == "" {
 			return c.Status(http.StatusBadRequest).SendString("invalid payload")
 		}
 
