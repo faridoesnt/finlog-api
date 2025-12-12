@@ -51,6 +51,12 @@ func ResendWebhook(app *contracts.App) fiber.Handler {
 			return c.Status(http.StatusBadRequest).SendString("invalid json")
 		}
 
+		app.Logger.Info().
+			Str("type", body.Type).
+			Str("email_id", body.Data.EmailID).
+			Any("to", body.Data.To).
+			Msg("resend_webhook_verified")
+
 		if body.Type == "" || body.Data.EmailID == "" {
 			return c.Status(http.StatusBadRequest).SendString("invalid payload")
 		}
@@ -59,6 +65,11 @@ func ResendWebhook(app *contracts.App) fiber.Handler {
 		defer cancel()
 
 		if err := app.Services.Email.HandleWebhook(ctx, body, payload); err != nil {
+			app.Logger.Error().
+				Err(err).
+				Str("type", body.Type).
+				Str("email_id", body.Data.EmailID).
+				Msg("resend_webhook_handle_failed")
 			// webhook should be 2xx if you want Resend to not retry,
 			// but for now it's safe: 500 so Resend can retry.
 			return c.Status(http.StatusInternalServerError).SendString("failed")
