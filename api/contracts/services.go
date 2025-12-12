@@ -7,4 +7,5 @@ type Services struct {
 	Budget       BudgetService
 	KeyBackup    KeyBackupService
 	Import       ImportService
+	Email        EmailService
 }

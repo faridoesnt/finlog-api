@@ -18,6 +18,7 @@ func Init(app *contracts.App) {
 	registerAPIRoutes(app, app.Fiber.Group("/api"))
 	registerAPIRoutes(app, app.Fiber.Group("/api/v1"))
 	registerAPIRoutes(app, app.Fiber.Group("/v1"))
+	RegisterWebhook(app)
 }
 
 func registerAPIRoutes(app *contracts.App, api fiber.Router) {
