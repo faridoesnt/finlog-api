@@ -9,14 +9,15 @@ import (
 	"encoding/hex"
 	"errors"
 	"fmt"
+
 	// "net"
 	"net/mail"
-	"net/smtp"
 	"net/url"
 	"strings"
 	"time"
 
 	"github.com/golang-jwt/jwt/v5"
+	"github.com/resend/resend-go/v3"
 	"golang.org/x/crypto/bcrypt"
 
 	"finlog-api/api/constants"
@@ -338,47 +339,29 @@ func hashToken(value string) string {
 }
 
 func (s *Service) sendVerificationEmail(user *entities.User, token string) error {
-	host := strings.TrimSpace(s.app.Config[constants.SMTPHost])
-	if host == "" {
-		return errors.New("smtp host is not configured")
-	}
-	port := strings.TrimSpace(s.app.Config[constants.SMTPPort])
-	if port == "" {
-		port = "587"
-	}
-	username := strings.TrimSpace(s.app.Config[constants.SMTPUsername])
-	password := strings.TrimSpace(s.app.Config[constants.SMTPPassword])
-	from := strings.TrimSpace(s.app.Config[constants.SMTPFrom])
+	from := strings.TrimSpace(s.app.Config[constants.EmailFrom])
 	if from == "" {
-		return errors.New("smtp from address is not configured")
+		return errors.New("EMAIL_FROM is not configured")
 	}
-	fromName := strings.TrimSpace(s.app.Config[constants.SMTPFromName])
-	if fromName == "" {
-		fromName = "FinLog"
-	}
-
-	_ = smtp.Auth(nil)
-	if username != "" && password != "" {
-		// auth = smtp.PlainAuth("", username, password, host)
-	}
+	apiKey := s.app.Config[constants.ResendAPIKey]
 
 	activationURL := s.buildActivationURL(token)
 	body := buildEmailBody(defaultName(user.Email), activationURL)
 
-	msg := strings.Builder{}
-	msg.WriteString(fmt.Sprintf("From: %s <%s>\r\n", fromName, from))
-	msg.WriteString(fmt.Sprintf("To: %s\r\n", user.Email))
-	msg.WriteString(fmt.Sprintf("Subject: %s\r\n", emailSubject))
-	msg.WriteString("MIME-Version: 1.0\r\n")
-	msg.WriteString("Content-Type: text/html; charset=UTF-8\r\n")
-	msg.WriteString("\r\n")
-	msg.WriteString(body)
+    client := resend.NewClient(apiKey)
 
-	// addr := net.JoinHostPort(host, port)
-	// recipients := []string{user.Email}
-	// if err := smtp.SendMail(addr, auth, from, recipients, []byte(msg.String())); err != nil {
-	// 	return fmt.Errorf("failed to send verification email: %w", err)
-	// }
+    params := &resend.SendEmailRequest{
+        From:    from,
+        To:      []string{user.Email},
+        Html:    body,
+        Subject: emailSubject,
+    }
+
+    _, err := client.Emails.Send(params)
+    if err != nil {
+        return fmt.Errorf("failed to send verification email: %w", err)
+    }
+
 	return nil
 }
 

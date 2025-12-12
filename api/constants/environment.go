@@ -11,12 +11,8 @@ const (
 	ImportUndoRateLimitRequests = "IMPORT_UNDO_RATE_LIMIT_REQUESTS"
 	ImportUndoRateLimitWindow   = "IMPORT_UNDO_RATE_LIMIT_WINDOW"
 	APIBaseURL                  = "API_BASE_URL"
-	SMTPHost                    = "SMTP_HOST"
-	SMTPPort                    = "SMTP_PORT"
-	SMTPUsername                = "SMTP_USERNAME"
-	SMTPPassword                = "SMTP_PASSWORD"
-	SMTPFrom                    = "SMTP_FROM"
-	SMTPFromName                = "SMTP_FROM_NAME"
+	ResendAPIKey                = "RESEND_API_KEY"
+	EmailFrom                   = "EMAIL_FROM"
 )
 
 const (
