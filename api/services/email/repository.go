@@ -102,6 +102,7 @@ func (r *Repository) ApplyEmailStatus(ctx context.Context, resendID string, toEm
 		at,
 		lastErr,
 		lastErr,
+		lastErr,
 		resendID,
 	)
 	if err != nil {
