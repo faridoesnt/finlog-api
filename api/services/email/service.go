@@ -94,35 +94,43 @@ func (s *Service) HandleWebhook(ctx context.Context, payload request.ResendWebho
 		return nil
 	}
 
-	occurredAt := time.Now()
-	if payload.CreatedAt != "" {
-		if t, err := time.Parse(time.RFC3339, payload.CreatedAt); err == nil {
-			occurredAt = t
-		}
+	toEmail := ""
+	if len(payload.Data.To) > 0 {
+		toEmail = payload.Data.To[0]
 	}
 
-	rawJSON := json.RawMessage(raw)
+	occurredAt := payload.CreatedAt
+	if !payload.Data.CreatedAt.IsZero() {
+		occurredAt = payload.Data.CreatedAt
+	}
 
 	if err := s.repo.UpsertEmailEvent(ctx, entities.UpsertEmailEventParams{
-		ResendID:    payload.Data.ID,
-		EventType:   payload.Type,
-		ToEmail:     payload.Data.To,
-		Error:       payload.Data.Error,
-		OccurredAt:  occurredAt,
-		RawPayload:  rawJSON,
+		ResendID:   payload.Data.EmailID,
+		EventType:  payload.Type,
+		ToEmail:    toEmail,
+		Error:      payload.Data.Error,
+		OccurredAt: occurredAt,
+		RawPayload: json.RawMessage(raw),
 	}); err != nil {
-		return fmt.Errorf("upsert email event: %w", err)
+		return err
 	}
 
-	if err := s.repo.ApplyEmailStatus(ctx, payload.Data.ID, payload.Data.To, payload.Type, occurredAt, payload.Data.Error); err != nil {
-		return fmt.Errorf("apply email status: %w", err)
+	if err := s.repo.ApplyEmailStatus(
+		ctx,
+		payload.Data.EmailID,
+		toEmail,
+		payload.Type,
+		occurredAt,
+		payload.Data.Error,
+	); err != nil {
+		return err
 	}
 
 	s.app.Logger.Info().
 		Str("type", payload.Type).
-		Str("email", payload.Data.To).
-		Str("resend_id", payload.Data.ID).
-		Msg("email_webhook_received")
+		Str("email", toEmail).
+		Str("resend_id", payload.Data.EmailID).
+		Msg("email_webhook_processed")
 
 	return nil
 }
