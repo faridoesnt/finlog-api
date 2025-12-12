@@ -57,6 +57,10 @@ func (r *Repository) UpsertEmailEvent(ctx context.Context, p entities.UpsertEmai
 }
 
 func (r *Repository) ApplyEmailStatus(ctx context.Context, resendID string, toEmail string, eventType string, at time.Time, lastErr string) error {
+	r.app.Logger.Debug().
+		Str("resend_id", resendID).
+		Str("event", eventType).
+		Msg("apply_email_status_start")
 
 	status, ok := mapEventToStatus(eventType)
 	if !ok {
@@ -69,11 +73,25 @@ func (r *Repository) ApplyEmailStatus(ctx context.Context, resendID string, toEm
 	if err != nil {
 		return err
 	}
-	defer tx.Rollback()
+	defer func() {
+		if err != nil {
+			_ = tx.Rollback()
+		} else {
+			r.app.Logger.Debug().
+				Str("resend_id", resendID).
+				Msg("tx_closed_without_error")
+		}
+	}()
+
 
 	// ensure row exists
 	_, err = tx.ExecContext(ctx, insertEmailMessage, resendID, toEmail, at)
 	if err != nil {
+		r.app.Logger.Error().
+			Err(err).
+			Str("resend_id", resendID).
+			Msg("insert_email_message_failed")
+
 		return err
 	}
 
@@ -87,6 +105,13 @@ func (r *Repository) ApplyEmailStatus(ctx context.Context, resendID string, toEm
 		resendID,
 	)
 	if err != nil {
+		r.app.Logger.Error().
+			Err(err).
+			Str("resend_id", resendID).
+			Str("status", string(status)).
+			Int("priority", nextPriority).
+			Msg("update_email_message_failed")
+
 		return err
 	}
 
@@ -95,7 +120,25 @@ func (r *Repository) ApplyEmailStatus(ctx context.Context, resendID string, toEm
 		_, _ = tx.ExecContext(ctx, insertEmailSuppression, toEmail, status, resendID)
 	}
 
-	return tx.Commit()
+	r.app.Logger.Info().
+		Str("resend_id", resendID).
+		Str("status", string(status)).
+		Msg("email_status_tx_commit")
+
+	err = tx.Commit()
+	if err != nil {
+		r.app.Logger.Error().
+			Err(err).
+			Str("resend_id", resendID).
+			Msg("email_status_tx_commit_failed")
+		return err
+	}
+
+	r.app.Logger.Info().
+		Str("resend_id", resendID).
+		Msg("email_status_tx_commit")
+
+	return nil
 }
 
 func mapEventToStatus(event string) (EmailStatus, bool) {

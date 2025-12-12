@@ -87,6 +87,12 @@ func (s *Service) SendEmail(to, subject, html string) error {
 }
 
 func (s *Service) HandleWebhook(ctx context.Context, payload request.ResendWebhookPayload, raw []byte) error {
+	s.app.Logger.Info().
+		Str("type", payload.Type).
+		Str("email_id", payload.Data.EmailID).
+		Any("to", payload.Data.To).
+		Msg("processing_email_webhook")
+
 	switch payload.Type {
 	case "email.delivered", "email.bounced", "email.complained", "email.failed":
 	default:
@@ -112,6 +118,11 @@ func (s *Service) HandleWebhook(ctx context.Context, payload request.ResendWebho
 		OccurredAt: occurredAt,
 		RawPayload: json.RawMessage(raw),
 	}); err != nil {
+		s.app.Logger.Error().
+			Err(err).
+			Str("email_id", payload.Data.EmailID).
+			Msg("upsert_email_event_failed")
+
 		return err
 	}
 
@@ -123,6 +134,12 @@ func (s *Service) HandleWebhook(ctx context.Context, payload request.ResendWebho
 		occurredAt,
 		payload.Data.Error,
 	); err != nil {
+		s.app.Logger.Error().
+			Err(err).
+			Str("email_id", payload.Data.EmailID).
+			Str("event", payload.Type).
+			Msg("apply_email_status_failed")
+
 		return err
 	}
 
