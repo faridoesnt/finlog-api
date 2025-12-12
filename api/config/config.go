@@ -30,12 +30,8 @@ func Init() map[string]string {
 		"JWT_TTL",
 		"REFRESH_TTL",
 
-		"SMTP_HOST",
-		"SMTP_PORT",
-		"SMTP_USERNAME",
-		"SMTP_PASSWORD",
-		"SMTP_FROM",
-		"SMTP_FROM_NAME",
+		"RESEND_API_KEY",
+		"EMAIL_FROM",
 
 		"MYSQL_ROOT_PASSWORD",
 		"MYSQL_DATABASE",
