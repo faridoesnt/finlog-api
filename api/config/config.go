@@ -1,18 +1,57 @@
 package config
 
 import (
+	"fmt"
+	"os"
+
 	"github.com/joho/godotenv"
-	zero "github.com/rs/zerolog/log"
 )
 
 func Init() map[string]string {
-	var err error
+	config := make(map[string]string)
 
-	config, err := godotenv.Read()
-	if err != nil {
-		zero.Panic().
-			Str("Context", "Load Env").
-			Err(err)
+	_ = godotenv.Load()
+
+	keys := []string{
+		"SERVER_ENV",
+		"SERVER_PORT",
+
+		"DB_DIALEG",
+		"DB_HOSTWRITER",
+		"DB_HOSTREADER",
+		"DB_PORT",
+		"DB_NAME",
+
+		"USERNAME",
+		"PASSWORD",
+
+		"JWT_SECRET",
+		"REFRESH_SECRET",
+		"JWT_TTL",
+		"REFRESH_TTL",
+
+		"SMTP_HOST",
+		"SMTP_PORT",
+		"SMTP_USERNAME",
+		"SMTP_PASSWORD",
+		"SMTP_FROM",
+		"SMTP_FROM_NAME",
+
+		"MYSQL_ROOT_PASSWORD",
+		"MYSQL_DATABASE",
+		"MYSQL_USER",
+		"MYSQL_PASSWORD",
+
+		"NETDATA_MYSQL_USER",
+		"NETDATA_MYSQL_PASSWORD",
+	}
+
+	for _, key := range keys {
+		val := os.Getenv(key)
+		if val == "" {
+			panic(fmt.Sprintf("❌ ENV %s is required but not set", key))
+		}
+		config[key] = val
 	}
 
 	return config

@@ -2,13 +2,13 @@ package constants
 
 // Database
 const (
-	DbDialeg     = "db_dialeg"
-	DbHostWriter = "db_hostWriter"
-	DbHostReader = "db_hostReader"
-	DbPort       = "db_port"
-	DbName       = "db_name"
-	DbUser       = "username"
-	DbPass       = "password"
+	DbDialeg     = "DB_DIALEG"
+	DbHostWriter = "DB_HOSTWRITER"
+	DbHostReader = "DB_HOSTREADER"
+	DbPort       = "DB_PORT"
+	DbName       = "DB_NAME"
+	DbUser       = "USERNAME"
+	DbPass       = "PASSWORD"
 )
 const (
 	JWT_SECRET     = "JWT_SECRET"
