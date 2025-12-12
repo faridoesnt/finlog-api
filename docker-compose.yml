@@ -5,7 +5,7 @@ services:
     restart: unless-stopped
     environment:
       MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
-      MYSQL_DATABASE: ${MYSQL_DB}
+      MYSQL_DATABASE: ${MYSQL_DATABASE}
       MYSQL_USER: ${MYSQL_USER}
       MYSQL_PASSWORD: ${MYSQL_PASSWORD}
       TZ: Asia/Jakarta
@@ -42,8 +42,8 @@ services:
       - "8686"
     environment:
       TZ: Asia/Jakarta
-    volumes:
-      - ./.env:/app/.env:ro
+    env_file:
+      - .env.runtime
     networks:
       - finlog-net
 
@@ -63,8 +63,8 @@ services:
       - "8686"
     environment:
       TZ: Asia/Jakarta
-    volumes:
-      - ./.env:/app/.env:ro
+    env_file:
+      - .env.runtime
     networks:
       - finlog-net
 
