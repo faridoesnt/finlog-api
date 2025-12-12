@@ -13,6 +13,7 @@ const (
 	APIBaseURL                  = "API_BASE_URL"
 	ResendAPIKey                = "RESEND_API_KEY"
 	EmailFrom                   = "EMAIL_FROM"
+	ResendWebhookSecret         = "RESEND_WEBHOOK_SECRET"
 )
 
 const (

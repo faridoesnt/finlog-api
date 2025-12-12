@@ -17,7 +17,6 @@ import (
 	"time"
 
 	"github.com/golang-jwt/jwt/v5"
-	"github.com/resend/resend-go/v3"
 	"golang.org/x/crypto/bcrypt"
 
 	"finlog-api/api/constants"
@@ -339,28 +338,18 @@ func hashToken(value string) string {
 }
 
 func (s *Service) sendVerificationEmail(user *entities.User, token string) error {
-	from := strings.TrimSpace(s.app.Config[constants.EmailFrom])
-	if from == "" {
-		return errors.New("EMAIL_FROM is not configured")
-	}
-	apiKey := s.app.Config[constants.ResendAPIKey]
-
 	activationURL := s.buildActivationURL(token)
 	body := buildEmailBody(defaultName(user.Email), activationURL)
 
-    client := resend.NewClient(apiKey)
+	err := s.app.Services.Email.SendEmail(user.Email, emailSubject, body)
+	if err != nil {
+		s.app.Logger.Error().
+			Err(err).
+			Str("email", user.Email).
+			Msg("verification_email_failed")
 
-    params := &resend.SendEmailRequest{
-        From:    from,
-        To:      []string{user.Email},
-        Html:    body,
-        Subject: emailSubject,
-    }
-
-    _, err := client.Emails.Send(params)
-    if err != nil {
-        return fmt.Errorf("failed to send verification email: %w", err)
-    }
+		return err
+	}
 
 	return nil
 }

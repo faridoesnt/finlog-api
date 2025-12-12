@@ -32,6 +32,7 @@ func Init() map[string]string {
 
 		"RESEND_API_KEY",
 		"EMAIL_FROM",
+		"RESEND_WEBHOOK_SECRET",
 
 		"MYSQL_ROOT_PASSWORD",
 		"MYSQL_DATABASE",
