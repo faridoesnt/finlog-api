@@ -30,6 +30,8 @@ func Init() map[string]string {
 		"JWT_TTL",
 		"REFRESH_TTL",
 
+		"API_BASE_URL",
+
 		"RESEND_API_KEY",
 		"EMAIL_FROM",
 		"RESEND_WEBHOOK_SECRET",
