@@ -339,9 +339,13 @@ func hashToken(value string) string {
 
 func (s *Service) sendVerificationEmail(user *entities.User, token string) error {
 	activationURL := s.buildActivationURL(token)
-	body := buildEmailBody(defaultName(user.Email), activationURL)
 
-	err := s.app.Services.Email.SendEmail(user.Email, emailSubject, body)
+	variables := map[string]interface{}{
+		"name": user.Name,
+		"link": activationURL,
+	}
+
+	err := s.app.Services.Email.SendEmail(user.Email, variables)
 	if err != nil {
 		s.app.Logger.Error().
 			Err(err).
@@ -360,14 +364,5 @@ func (s *Service) buildActivationURL(token string) string {
 		baseURL = "https://api.finlog.app"
 	}
 	escaped := url.QueryEscape(token)
-	return fmt.Sprintf("%s/auth/verify?token=%s", baseURL, escaped)
-}
-
-func buildEmailBody(name, activationURL string) string {
-	return fmt.Sprintf(`
-<p>Hai %s,</p>
-<p>Terima kasih telah mendaftar FinLog. Klik tombol di bawah ini untuk mengaktifkan akun Anda. Link ini berlaku 24 jam dan hanya bisa dipakai sekali.</p>
-<p><a href="%s" style="background:#2e7d32;color:#fff;padding:12px 20px;border-radius:8px;text-decoration:none;display:inline-block;">Aktifkan Akun</a></p>
-<p>Terima kasih,<br/>Tim FinLog</p>
-`, name, activationURL)
+	return fmt.Sprintf("%s/v1/auth/verify?token=%s", baseURL, escaped)
 }
