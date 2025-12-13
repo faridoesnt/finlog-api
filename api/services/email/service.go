@@ -41,7 +41,7 @@ func Init(app *contracts.App) contracts.EmailService {
 	}
 }
 
-func (s *Service) SendEmail(to, subject, html string) error {
+func (s *Service) SendEmail(to string, variables map[string]interface{}) error {
 	const (
 		maxRetries = 3
 		timeout    = 10 * time.Second
@@ -52,12 +52,16 @@ func (s *Service) SendEmail(to, subject, html string) error {
 	for attempt := 1; attempt <= maxRetries; attempt++ {
 		ctx, cancel := context.WithTimeout(context.Background(), timeout)
 
-		resp, err := s.client.Emails.SendWithContext(ctx, &resend.SendEmailRequest{
+		params := &resend.SendEmailRequest{
 			From:    s.from,
 			To:      []string{to},
-			Subject: subject,
-			Html:    html,
-		})
+			Template: &resend.EmailTemplate{
+				Id: "aktivasi-akun",
+				Variables: variables,
+			},
+		}
+
+		resp, err := s.client.Emails.SendWithContext(ctx, params)
 
 		cancel()
 

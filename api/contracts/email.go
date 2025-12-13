@@ -13,6 +13,6 @@ type EmailRepository interface {
 }
 
 type EmailService interface {
-	SendEmail(to, subject, html string) error
+	SendEmail(to string, variables map[string]interface{}) error
 	HandleWebhook(ctx context.Context, body request.ResendWebhookPayload, payload []byte) error
 }
