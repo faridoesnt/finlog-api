@@ -4,7 +4,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"strings"
 
 	"github.com/gofiber/fiber/v2"
 
@@ -82,7 +81,7 @@ func VerifyEmail(c *fiber.Ctx) error {
 			return responses.BadRequest(err)
 		}
 	}
-	redirectURL := getVerificationRedirect(c.Get(fiber.HeaderUserAgent))
+	redirectURL := getVerificationRedirect()
 	return c.Redirect(redirectURL, fiber.StatusFound)
 }
 
@@ -110,12 +109,8 @@ func ResendVerification(c *fiber.Ctx) error {
 	})
 }
 
-func getVerificationRedirect(agent string) string {
-	lower := strings.ToLower(agent)
-	if strings.Contains(lower, "android") || strings.Contains(lower, "iphone") || strings.Contains(lower, "ipad") {
-		return "finlog://login?verified=true"
-	}
-	return "https://finlog.app/activated"
+func getVerificationRedirect() string {
+	return "https://api.finlog.asia/activated"
 }
 
 // Refresh renews access/refresh tokens using the provided refresh token.
@@ -145,4 +140,52 @@ func Logout(c *fiber.Ctx) error {
 		return responses.BadRequest(err)
 	}
 	return c.SendStatus(fiber.StatusNoContent)
+}
+
+func ActivatedHandler(c *fiber.Ctx) error {
+	return c.Type("html").SendString(`
+		<!DOCTYPE html>
+		<html lang="id">
+		<head>
+		<meta charset="utf-8" />
+		<meta name="viewport" content="width=device-width, initial-scale=1" />
+		<title>FinLog</title>
+
+		<script>
+			window.onload = function () {
+			window.location.href = "finlog://login?verified=true";
+			setTimeout(function () {
+				document.getElementById("openApp").style.display = "block";
+			}, 1500);
+			};
+		</script>
+
+		<style>
+			body {
+			font-family: system-ui, -apple-system, BlinkMacSystemFont;
+			text-align: center;
+			padding: 40px;
+			}
+			a {
+			display: inline-block;
+			margin-top: 20px;
+			padding: 12px 20px;
+			background: #111;
+			color: #fff;
+			text-decoration: none;
+			border-radius: 8px;
+			}
+		</style>
+		</head>
+
+		<body>
+		<h2>Email berhasil diverifikasi</h2>
+		<p>Membuka aplikasi FinLog…</p>
+
+		<a id="openApp" href="finlog://login?verified=true" style="display:none">
+			Buka Aplikasi FinLog
+		</a>
+		</body>
+		</html>
+	`)
 }
