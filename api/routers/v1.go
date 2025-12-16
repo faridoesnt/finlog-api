@@ -14,6 +14,8 @@ func Init(app *contracts.App) {
 		return c.SendString("ok")
 	})
 
+	app.Fiber.Get("/activated", handlers.ActivatedHandler)
+
 	// Support both /api and /api/v1 prefixes for compatibility.
 	registerAPIRoutes(app, app.Fiber.Group("/api"))
 	registerAPIRoutes(app, app.Fiber.Group("/api/v1"))
