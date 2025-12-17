@@ -156,6 +156,101 @@ func Init(app *contracts.App) {
 		return c.Type("html").SendString(html)
 	})
 
+	app.Fiber.Get("/account-deletion", func(c *fiber.Ctx) error {
+		currentYear := time.Now().Year()
+		lastUpdated := time.Now().Format("02 January 2006")
+
+		html := fmt.Sprintf(`<!DOCTYPE html>
+		<html lang="en">
+		<head>
+		<meta charset="utf-8" />
+		<title>Penghapusan Akun dan Data – FinLog</title>
+		<meta name="viewport" content="width=device-width, initial-scale=1" />
+		<meta name="robots" content="index, follow" />
+		<style>
+			body {
+			font-family: -apple-system, BlinkMacSystemFont, "Segoe UI",
+						Roboto, Helvetica, Arial, sans-serif;
+			background-color: #ffffff;
+			color: #111827;
+			margin: 0;
+			padding: 0;
+			}
+			.container {
+			max-width: 720px;
+			margin: 40px auto;
+			padding: 0 20px 60px;
+			line-height: 1.7;
+			}
+			h1 {
+			font-size: 28px;
+			margin-bottom: 8px;
+			}
+			h2 {
+			font-size: 18px;
+			margin-top: 32px;
+			margin-bottom: 8px;
+			}
+			p, li {
+			font-size: 15px;
+			}
+			ul {
+			padding-left: 20px;
+			}
+			.updated {
+			color: #6b7280;
+			font-size: 13px;
+			margin-bottom: 24px;
+			}
+			footer {
+			margin-top: 48px;
+			font-size: 13px;
+			color: #6b7280;
+			}
+		</style>
+		</head>
+		<body>
+		<div class="container">
+			<h1Penghapusan Akun dan Data - FinLog</h1>
+			<div class="updated">Last updated: %s</div>
+
+			<p>
+			Pengguna dapat meminta penghapusan akun dan data dengan cara:
+			</p>
+
+			<p>1. Mengirim email ke faridhaikaal@gmail.com</p>
+			<p>2. Gunakan subjek: Permintaan Penghapusan Akun FinLog</p>
+			<p>3. Sertakan email yang terdaftar di aplikasi</p>
+
+			<p>
+			Data yang dihapus:
+			</p>
+
+			<ul>
+			<li>Akun pengguna</li>
+			<li>Data transaksi</li>
+			<li>Data autentikasi</li>
+			</ul>
+
+			<p>
+			Retensi data:
+			</p>
+
+			<ul>
+			<li>Data dihapus permanen maksimal 30 hari setelah permintaan diterima</li>
+			</ul>
+
+			<footer>
+			© %d FinLog. All rights reserved.
+			</footer>
+		</div>
+		</body>
+		</html>
+		`, lastUpdated, currentYear)
+
+		return c.Type("html").SendString(html)
+	})
+
 	// Support both /api and /api/v1 prefixes for compatibility.
 	registerAPIRoutes(app, app.Fiber.Group("/api"))
 	registerAPIRoutes(app, app.Fiber.Group("/api/v1"))
